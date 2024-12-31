@@ -1,0 +1,12 @@
+{
+  "name": "grafana-alloy-otel-tutorial-loki-prometheus",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "deploy": "git add . && git commit -m Build && git push",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "git@github.com:coding-to-music/grafana-alloy-otel-tutorial-loki-prometheus.git",
+  "author": "coding-to-music <connors.tom@gmail.com>",
+  "license": "MIT"
+}
