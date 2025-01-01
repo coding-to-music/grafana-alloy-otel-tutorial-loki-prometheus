@@ -446,6 +446,8 @@ Optional: You can do a system service restart Alloy and load the configuration f
 
 ```java
 sudo systemctl reload alloy
+
+sudo systemctl status alloy
 ```
 
 ## Inspect your configuration in the Alloy UI
