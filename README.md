@@ -153,13 +153,13 @@ Open http://localhost:3000 in your browser to access the Grafana UI.
 
 ### Configure Alloy
 
-After the local Grafana instance is set up, the next step is to configure Alloy. You use components in the config.alloy file to tell Alloy which logs you want to scrape, how you want to process that data, and where you want the data sent.
+After the local Grafana instance is set up, the next step is to configure Alloy. You use components in the `config.alloy` file to tell Alloy which logs you want to scrape, how you want to process that data, and where you want the data sent.
 
-The examples run on a single host so that you can run them on your laptop or in a Virtual Machine. You can try the examples using a config.alloy file and experiment with the examples.
+The examples run on a single host so that you can run them on your laptop or in a Virtual Machine. You can try the examples using a `config.alloy` file and experiment with the examples.
 
 ### Create a `config.alloy` file
 
-Create a config.alloy file within your current working directory.
+Create a `config.alloy` file within your current working directory.
 
 ```java
 touch config.alloy
@@ -309,4 +309,173 @@ You have installed and configured Alloy, and sent logs from your local host to y
 
 In the next tutorial, you learn more about configuration concepts and metrics.
 
+# Use Grafana Alloy to send metrics to Prometheus
+
 https://grafana.com/docs/alloy/latest/tutorials/send-metrics-to-prometheus/
+
+In the previous tutorial, you learned how to configure Alloy to collect and process logs from your local machine and send them to Loki.
+
+This tutorial shows you how to configure Alloy to collect and process metrics from your local machine, send them to Prometheus, and use Grafana to explore the results.
+
+## Before you begin
+
+To complete this tutorial:
+
+- You must have a basic understanding of Alloy and telemetry collection in general.
+- You should be familiar with Prometheus, PromQL, Loki, LogQL, and basic Grafana navigation.
+- You must complete the previous tutorial to prepare the following prerequisites:
+  - Install Alloy and start the service in your environment.
+  - Set up a local Grafana instance.
+  - Create a `config.alloy` file.
+
+Tip
+
+Alternatively, you can try out this example in the interactive learning environment: Sending metrics to Prometheus.
+
+It’s a fully configured environment with all the dependencies already installed.
+
+Interactive
+![image](/images/Alloy-Interactive-Learning-Environment-Doc-Banner2.png)
+
+## Configure Alloy
+
+In this tutorial, you configure Alloy to collect metrics and send them to Prometheus.
+
+You add components to your `config.alloy` file to tell Alloy which metrics you want to scrape, how you want to process that data, and where you want the data sent.
+
+The following steps build on the `config.alloy` file you created in the previous tutorial.
+
+## First component: Scraping
+
+Paste the following component configuration at the top of your `config.alloy` file:
+
+```java
+prometheus.exporter.unix "local_system" { }
+
+prometheus.scrape "scrape_metrics" {
+  targets         = prometheus.exporter.unix.local_system.targets
+  forward_to      = [prometheus.relabel.filter_metrics.receiver]
+  scrape_interval = "10s"
+}
+```
+
+This configuration creates a prometheus.scrape component named scrape_metrics which does the following:
+
+- It connects to the `local_system` component as its source or target.
+- It forwards the metrics it scrapes to the receiver of another component called `filter_metrics`.
+- It tells Alloy to scrape metrics every 10 seconds.
+
+## Second component: Filter metrics
+
+Filtering non-essential metrics before sending them to a data source can help you reduce costs and allow you to focus on the data that matters most.
+
+The following example demonstrates how you can filter out or drop metrics before sending them to Prometheus.
+
+Paste the following component configuration below the previous component in your `config.alloy` file:
+
+```java
+prometheus.relabel "filter_metrics" {
+  rule {
+    action        = "drop"
+    source_labels = ["env"]
+    regex         = "dev"
+  }
+
+  forward_to = [prometheus.remote_write.metrics_service.receiver]
+}
+```
+
+The `prometheus.relabel` component is commonly used to filter Prometheus metrics or standardize the label set passed to one or more downstream receivers. You can use this component to rewrite the label set of each metric sent to the receiver. Within this component, you can define rule blocks to specify how you would like to process metrics before they’re stored or forwarded.
+
+This configuration creates a `prometheus.relabel` component named filter_metrics which does the following:
+
+- It receives scraped metrics from the scrape_metrics component.
+- It tells Alloy to drop metrics that have an "env" label equal to "dev".
+- It forwards the processed metrics to the receiver of another component called metrics_service.
+
+## Third component: Write metrics to Prometheus
+
+Paste the following component configuration below the previous component in your `config.alloy` file:
+
+```java
+prometheus.remote_write "metrics_service" {
+    endpoint {
+        url = "http://localhost:9090/api/v1/write"
+
+        // basic_auth {
+        //   username = "admin"
+        //   password = "admin"
+        // }
+    }
+}
+```
+
+This final component creates a prometheus.remote_write component named metrics_service that points to http://localhost:9090/api/v1/write.
+
+This completes the simple configuration pipeline.
+
+Tip
+
+The `basic_auth` is commented out because the local `docker compose` stack doesn’t require it. It’s included in this example to show how you can configure authorization for other environments.
+
+For further authorization options, refer to the `prometheus.remote_write` component documentation.
+
+This connects directly to the Prometheus instance running in the Docker container.
+
+## Reload the configuration
+
+Copy your local `config.alloy` file into the default Alloy configuration file location.
+
+```java
+sudo cp config.alloy /etc/alloy/config.alloy
+```
+
+Call the /-/reload endpoint to tell Alloy to reload the configuration file without a system service restart.
+
+```java
+curl -X POST http://localhost:12345/-/reload
+```
+
+Tip
+
+This step uses the Alloy UI, on `localhost` port `12345`. If you choose to run Alloy in a Docker container, make sure you use the `--server.http.listen-addr=0.0.0.0:12345` argument.
+
+If you don’t use this argument, the debugging UI won’t be available outside of the Docker container.
+
+Optional: You can do a system service restart Alloy and load the configuration file:
+
+```java
+sudo systemctl reload alloy
+```
+
+## Inspect your configuration in the Alloy UI
+
+Open http://localhost:12345 and click the Graph tab at the top. The graph should look similar to the following:
+
+Your configuration in the Alloy UI
+![image](/images/Metrics-inspect-your-config.png)
+
+The Alloy UI shows you a visual representation of the pipeline you built with your Alloy component configuration.
+
+You can see that the components are healthy, and you are ready to explore the metrics in Grafana.
+
+## Log into Grafana and explore metrics in Prometheus
+
+Open http://localhost:3000/explore/metrics/ to access the Explore Metrics feature in Grafana.
+
+From here you can visually explore the metrics sent to Prometheus by Alloy.
+
+Explore Metrics App
+![image](/images/explore-metrics.png)
+
+You can also build PromQL queries manually to explore the data further.
+
+Open http://localhost:3000/explore to access the Explore feature in Grafana.
+
+Select Prometheus as the data source and click the Metrics Browser button to select the metric, labels, and values for your labels.
+
+Here you can see that metrics are flowing through to Prometheus as expected, and the end-to-end configuration was successful.
+
+### Summary
+
+You have configured Alloy to collect and process metrics from your local host and send them to your local Grafana stack.
