@@ -448,6 +448,11 @@ Optional: You can do a system service restart Alloy and load the configuration f
 sudo systemctl reload alloy
 
 sudo systemctl status alloy
+
+# if it fails to start, review the logs:
+
+journalctl -u alloy.service -n 50
+
 ```
 
 ## Inspect your configuration in the Alloy UI
