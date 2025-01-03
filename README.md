@@ -32,6 +32,66 @@ cd /etc/alloy
 sudo vi config.alloy
 ```
 
+# Store secrets so Grafana Alloy can reference them every time it is reloaded and not needed to be hard-coded
+
+To ensure your Grafana secrets are auto-loaded on reboot or restart of Alloy, you can store them in a file that is sourced during the boot process. Here’s a common approach to achieve this:
+
+Create a Secrets File:
+
+```java
+sudo vi /etc/grafana_secrets.env
+```
+
+Add Your Secrets to the File: Ensure they are in the format KEY=value:
+
+```java
+echo "GRAFANA_SECRET=your_secret_value" | sudo tee -a /etc/grafana_secrets.env
+```
+
+Set Proper Permissions:
+
+```java
+sudo chmod 600 /etc/grafana_secrets.env
+sudo chown root:root /etc/grafana_secrets.env
+```
+
+Modify /etc/profile:
+
+Open /etc/profile in a text editor:
+
+```java
+sudo vi /etc/profile
+```
+
+Add the following line at the end of the file to source your secrets file:
+
+```java
+source /etc/grafana_secrets.env
+```
+
+Modify Service File for Alloy (if applicable):
+
+If you have a service file for Alloy (e.g., /etc/systemd/system/alloy.service), add the environment file in the service definition.
+
+```java
+[Service]
+EnvironmentFile=/etc/grafana_secrets.env
+```
+
+Reload System Daemons:
+
+```java
+sudo systemctl daemon-reload
+```
+
+Restart Your Service:
+
+```java
+sudo systemctl restart alloy.service
+```
+
+By following these steps, your Grafana secrets should be loaded automatically on system reboot or when the Alloy service is restarted.
+
 ## Use Grafana Alloy to send logs to Loki
 
 https://grafana.com/docs/alloy/latest/tutorials/send-logs-to-loki
