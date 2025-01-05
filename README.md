@@ -36,49 +36,94 @@ sudo vi config.alloy
 
 To ensure your Grafana secrets are auto-loaded on reboot or restart of Alloy, you can store them in a file that is sourced during the boot process. Here’s a common approach to achieve this:
 
-Create a Secrets File:
+Add any secrets to the alloy userid startup defaults file `/etc/default/alloy`
 
 ```java
-sudo vi /etc/grafana_secrets.env
+HOSTNAME=
+GRAFANA_LOKI_URL=
+GRAFANA_LOKI_USERNAME=
+GRAFANA_LOKI_PASSWORD=
+GRAFANA_PROM_URL=
+GRAFANA_PROM_USERNAME=
+GRAFANA_PROM_PASSWORD=
 ```
 
-Add Your Secrets to the File: Ensure they are in the format KEY=value:
+paste them into the `/etc/default/alloy` file:
 
 ```java
-echo "GRAFANA_SECRET=your_secret_value" | sudo tee -a /etc/grafana_secrets.env
+sudo vi /etc/default/alloy
 ```
 
-Set Proper Permissions:
+set the permissions restrictively
 
 ```java
-sudo chmod 600 /etc/grafana_secrets.env
-sudo chown root:root /etc/grafana_secrets.env
+sudo chmod 600 /etc/default/alloy
+sudo chown alloy:alloy /etc/default/alloy
 ```
 
-Modify /etc/profile:
+# restart alloy so it will see the environment values
 
-Open /etc/profile in a text editor:
+sudo systemctl restart alloy
+
+# view the status
+
+sudo systemctl status alloy
+
+# if you just want to reload config.alloy then call this:
+
+curl -X POST http://localhost:12345/-/reload
+
+# if any errors take a look at the log
+
+journalctl -u alloy.service -n 50
+
+# or
+
+journalctl -u alloy -n 50
+
+````
+
+Use the environment values like this:
 
 ```java
-sudo vi /etc/profile
-```
+loki.relabel "logs_integrations" {
+  forward_to = [loki.write.grafana_cloud_loki.receiver]
 
-Add the following line at the end of the file to source your secrets file:
+  rule {
+    replacement = sys.env("ALLOY_HOSTNAME")
+    target_label = "instance"
+  }
 
-```java
-source /etc/grafana_secrets.env
-```
+  rule {
+    target_label = "job"
+    replacement = "integrations/alloy"
+  }
+}
 
-Modify Service File for Alloy (if applicable):
+prometheus.remote_write "metrics_service" {
+  endpoint {
+    url = sys.env("GRAFANA_PROM_URL")
 
-If you have a service file for Alloy (e.g., /etc/systemd/system/alloy.service), add the environment file in the service definition.
+    basic_auth {
+      username = sys.env("GRAFANA_PROM_USERNAME")
+      password = sys.env("GRAFANA_PROM_PASSWORD")
+    }
+  }
+}
 
-```java
-[Service]
-EnvironmentFile=/etc/grafana_secrets.env
-```
+loki.write "grafana_cloud_loki" {
+  endpoint {
+    url = sys.env("GRAFANA_LOKI_URL")
 
-Reload System Daemons:
+    basic_auth {
+      username = sys.env("GRAFANA_LOKI_USERNAME")
+      password = sys.env("GRAFANA_LOKI_PASSWORD")
+    }
+  }
+}
+````
+
+If needed Reload System Daemons:
 
 ```java
 sudo systemctl daemon-reload
