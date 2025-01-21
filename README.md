@@ -137,6 +137,49 @@ sudo systemctl restart alloy.service
 
 By following these steps, your Grafana secrets should be loaded automatically on system reboot or when the Alloy service is restarted.
 
+## How to use Salt Stack to distribute the config.alloy
+
+To create a Salt Stack job that distributes an updated `config.alloy` file, you can use Salt's file management capabilities. Here's a basic approach to accomplish this:
+
+First, create a Salt State file (e.g., `alloy_config.sls`) with the following content:
+
+```java
+/etc/alloy/config.alloy:
+  file.managed:
+    - source: salt://alloy/config.alloy
+    - user: root
+    - group: root
+    - mode: 644
+    - makedirs: True
+
+reload_alloy_config:
+  cmd.run:
+    - name: curl -X POST http://localhost:12345/-/reload
+    - onchanges:
+      - file: /etc/alloy/config.alloy
+```
+
+Place your updated `config.alloy` file in the Salt file server, typically in `/srv/salt/alloy/config.alloy` on the Salt master.
+
+Apply the state to your minions using the Salt command:
+
+```java
+salt '*' state.apply alloy_config
+```
+
+This Salt State does the following:
+
+- It manages the `/etc/alloy/config.alloy` file on the minions, ensuring it matches the source file on the Salt master.
+- It sets appropriate permissions on the file.
+- It runs the `curl` command to reload the Alloy configuration, but only if the file has changed.
+- Remember to adjust the file paths and permissions as necessary for your specific setup.
+
+For more advanced usage, you might want to consider using Salt's template engine (Jinja) to dynamically generate the config file based on pillar data or other variables.
+
+For more information on Salt Stack's file management and state system, you can refer to the Salt Stack file management documentation. https://docs.saltproject.io/en/latest/ref/states/all/salt.states.file.html
+
+Note that this approach assumes that the Alloy service is running and accessible on `localhost:12345` on all minions. If this is not the case, you may need to adjust the reload command or add additional checks.
+
 ## Use Grafana Alloy to send logs to Loki
 
 https://grafana.com/docs/alloy/latest/tutorials/send-logs-to-loki
