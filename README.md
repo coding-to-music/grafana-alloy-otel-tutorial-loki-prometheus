@@ -745,3 +745,10 @@ Here you can see that metrics are flowing through to Prometheus as expected, and
 ### Summary
 
 You have configured Alloy to collect and process metrics from your local host and send them to your local Grafana stack.
+
+# download my personal config.alloy from github and use on the local machine
+
+```java
+cd /tmp
+wget https://raw.githubusercontent.com/coding-to-music/grafana-alloy-otel-tutorial-loki-prometheus/refs/heads/main/my_config.alloy
+```
