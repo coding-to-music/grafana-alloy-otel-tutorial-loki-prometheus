@@ -751,4 +751,16 @@ You have configured Alloy to collect and process metrics from your local host an
 ```java
 cd /tmp
 wget https://raw.githubusercontent.com/coding-to-music/grafana-alloy-otel-tutorial-loki-prometheus/refs/heads/main/my_config.alloy
+
+# verify
+more my_config.alloy
+
+# backup existing config.alloy
+sudo cp -p /etc/alloy/config.alloy /etc/alloy/config.alloy.$(date +%Y-%m-%d_%H-%M-%S)
+
+# verify backup
+sudo ls -l /etc/alloy
+
+sudo mv my_config.alloy /etc/alloy/config.alloy
 ```
+
