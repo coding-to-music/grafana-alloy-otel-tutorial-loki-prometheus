@@ -61,27 +61,33 @@ sudo chmod 600 /etc/default/alloy
 sudo chown alloy:alloy /etc/default/alloy
 ```
 
-# restart alloy so it will see the environment values
+restart alloy so it will see the environment values
 
+```java
 sudo systemctl restart alloy
+```
 
-# view the status
+view the status
 
+```java
 sudo systemctl status alloy
+```
 
-# if you just want to reload config.alloy then call this:
+if you just want to reload config.alloy then call this:
 
+```java
 curl -X POST http://localhost:12345/-/reload
+```
 
-# if any errors take a look at the log
+if any errors take a look at the log
 
+```java
 journalctl -u alloy.service -n 50
 
 # or
 
 journalctl -u alloy -n 50
-
-````
+```
 
 Use the environment values like this:
 
@@ -121,7 +127,7 @@ loki.write "grafana_cloud_loki" {
     }
   }
 }
-````
+```
 
 If needed Reload System Daemons:
 
@@ -136,6 +142,31 @@ sudo systemctl restart alloy.service
 ```
 
 By following these steps, your Grafana secrets should be loaded automatically on system reboot or when the Alloy service is restarted.
+
+# download my personal config.alloy from github and use on the local machine
+
+```java
+cd /tmp
+wget https://raw.githubusercontent.com/coding-to-music/grafana-alloy-otel-tutorial-loki-prometheus/refs/heads/main/my_config.alloy
+
+# verify
+more my_config.alloy
+
+# backup existing config.alloy
+sudo cp -p /etc/alloy/config.alloy /etc/alloy/config.alloy.$(date +%Y-%m-%d_%H-%M-%S)
+
+# verify backup
+sudo ls -l /etc/alloy
+
+sudo mv my_config.alloy /etc/alloy/config.alloy
+```
+
+This is what the config.alloy visualization looks like using the graph view:
+
+http://localhost:12345/graph
+
+Interactive
+![image](/images/my-alloy-config-in-the-Alloy-UI-image.png)
 
 ## How to use Salt Stack to distribute the config.alloy
 
@@ -745,22 +776,3 @@ Here you can see that metrics are flowing through to Prometheus as expected, and
 ### Summary
 
 You have configured Alloy to collect and process metrics from your local host and send them to your local Grafana stack.
-
-# download my personal config.alloy from github and use on the local machine
-
-```java
-cd /tmp
-wget https://raw.githubusercontent.com/coding-to-music/grafana-alloy-otel-tutorial-loki-prometheus/refs/heads/main/my_config.alloy
-
-# verify
-more my_config.alloy
-
-# backup existing config.alloy
-sudo cp -p /etc/alloy/config.alloy /etc/alloy/config.alloy.$(date +%Y-%m-%d_%H-%M-%S)
-
-# verify backup
-sudo ls -l /etc/alloy
-
-sudo mv my_config.alloy /etc/alloy/config.alloy
-```
-
