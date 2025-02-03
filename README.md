@@ -180,6 +180,103 @@ For more information on Salt Stack's file management and state system, you can r
 
 Note that this approach assumes that the Alloy service is running and accessible on `localhost:12345` on all minions. If this is not the case, you may need to adjust the reload command or add additional checks.
 
+# Install Node Exporter on Ubuntu cloud VMs
+
+To install Node Exporter on Ubuntu cloud VMs and have it enabled and automatically restart when the system reboots, you can follow these steps:
+
+### Download and extract Node Exporter:
+
+```java
+# these download instructions are obsolete - see below for getting the latest version
+cd /tmp
+wget https://github.com/prometheus/node_exporter/releases/download/v1.1.1/node_exporter-1.1.1.linux-amd64.tar.gz
+tar xvfz node_exporter-*.*-amd64.tar.gz
+cd node_exporter-*.*-amd64
+```
+
+Get the latest version number
+
+```java
+VERSION=$(curl -s https://api.github.com/repos/prometheus/node_exporter/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
+```
+
+Download the latest version
+
+```java
+wget https://github.com/prometheus/node_exporter/releases/download/${VERSION}/node_exporter-${VERSION:1}.linux-amd64.tar.gz
+```
+
+Extract the archive
+
+```java
+tar xvfz node_exporter-*.linux-amd64.tar.gz
+```
+
+Move the binary to /usr/local/bin
+
+```java
+sudo mv node_exporter-${VERSION:1}.linux-amd64/node_exporter /usr/local/bin/
+```
+
+Move the binary to a suitable location:
+
+```java
+sudo mv node_exporter /usr/local/bin/
+```
+
+### Create a systemd service file:
+
+```java
+sudo nano /etc/systemd/system/node_exporter.service
+```
+
+Add the following content to the service file:
+
+```java
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+User=node_exporter
+ExecStart=/usr/local/bin/node_exporter
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Create a user for Node Exporter:
+
+```java
+sudo useradd -rs /bin/false node_exporter
+```
+
+Set the correct permissions:
+
+```java
+sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter
+```
+
+Enable and start the service:
+
+```java
+sudo systemctl daemon-reload
+sudo systemctl enable node_exporter
+sudo systemctl start node_exporter
+```
+
+Verify that the service is running:
+
+```java
+sudo systemctl status node_exporter
+```
+
+These steps will install Node Exporter, create a systemd service for it, and ensure that it starts automatically on system boot. The service will also restart if it fails.
+
+For more detailed information on setting up Node Exporter, you can refer to the Node Exporter quickstart guide from Grafana's documentation.
+
+https://grafana.com/oss/prometheus/exporters/node-exporter/#node-exporter-quickstart
+
 ## Use Grafana Alloy to send logs to Loki
 
 https://grafana.com/docs/alloy/latest/tutorials/send-logs-to-loki
