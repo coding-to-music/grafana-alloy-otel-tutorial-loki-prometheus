@@ -187,7 +187,9 @@ To install Node Exporter on Ubuntu cloud VMs and have it enabled and automatical
 ### Download and extract Node Exporter:
 
 ```java
+#
 # these download instructions are obsolete - see below for getting the latest version
+#
 cd /tmp
 wget https://github.com/prometheus/node_exporter/releases/download/v1.1.1/node_exporter-1.1.1.linux-amd64.tar.gz
 tar xvfz node_exporter-*.*-amd64.tar.gz
@@ -197,13 +199,23 @@ cd node_exporter-*.*-amd64
 Get the latest version number
 
 ```java
-VERSION=$(curl -s https://api.github.com/repos/prometheus/node_exporter/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
+export NODE_EXPORTER_VERSION=$(curl -s https://api.github.com/repos/prometheus/node_exporter/releases/latest | grep -Po '"tag_name": "\K.*?(?=")')
+```
+
+Verify it is finding the latest version
+
+```java
+echo $NODE_EXPORTER_VERSION
+
+# should be something like:
+v1.8.2
 ```
 
 Download the latest version
 
 ```java
-wget https://github.com/prometheus/node_exporter/releases/download/${VERSION}/node_exporter-${VERSION:1}.linux-amd64.tar.gz
+cd /tmp
+wget https://github.com/prometheus/node_exporter/releases/download/${NODE_EXPORTER_VERSION}/node_exporter-${NODE_EXPORTER_VERSION:1}.linux-amd64.tar.gz
 ```
 
 Extract the archive
@@ -215,13 +227,7 @@ tar xvfz node_exporter-*.linux-amd64.tar.gz
 Move the binary to /usr/local/bin
 
 ```java
-sudo mv node_exporter-${VERSION:1}.linux-amd64/node_exporter /usr/local/bin/
-```
-
-Move the binary to a suitable location:
-
-```java
-sudo mv node_exporter /usr/local/bin/
+sudo mv node_exporter-${NODE_EXPORTER_VERSION:1}.linux-amd64/node_exporter /usr/local/bin/
 ```
 
 ### Create a systemd service file:
@@ -270,6 +276,14 @@ Verify that the service is running:
 ```java
 sudo systemctl status node_exporter
 ```
+
+open port 9100 and view the metrics
+
+http://localhost:9100/metrics
+
+or if that port is in use use the appropriate forwarded port:
+
+http://localhost:9101/metrics
 
 These steps will install Node Exporter, create a systemd service for it, and ensure that it starts automatically on system boot. The service will also restart if it fails.
 
