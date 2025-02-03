@@ -1,0 +1,269 @@
+// ##################################################
+// PROMETHEUS exporter.unix "local_system"
+// ##################################################
+prometheus.exporter.unix "local_system" { }
+
+prometheus.scrape "scrape_metrics" {
+  targets         = prometheus.exporter.unix.local_system.targets
+  forward_to      = [prometheus.relabel.filter_metrics.receiver]
+  scrape_interval = "60s"
+}
+
+prometheus.relabel "filter_metrics" {
+//  rule {
+//    action        = "drop"
+//    source_labels = ["env"]
+//    regex         = "dev"
+//  }
+
+  rule {
+    action        = "keep"
+//    action        = "drop"
+    source_labels = ["__name__"]
+//    regex         = "^(?!cpu_usage|system.cpu.idle|system.cpu.user|memory.usage|memory.available|memory.total|disk.io.time|disk.io.write_bytes_total|disk.io.read_bytes_total|network.bytes_received|network.bytes_sent|network.packets_received|network.packets_sent|process.cpu_seconds_total|process.memory_rss|system.load1|system.load5|system.load15).*$"
+
+    regex         = "node_memory_MemFree_bytes|node_memory_Buffers_bytes|node_memory_Cached_bytes|node_vmstat_pgpgin|node_vmstat_pgpgout|node_vmstat_pswpin|node_vmstat_pswpout|node_vmstat_pgfault|node_vmstat_pgmajfault|node_vmstat_oom_kill|node_disk_io_time_weighted_seconds_total|node_disk_read_time_seconds_total|node_disk_reads_completed_total|node_filesystem_files_free|node_filesystem_files|node_filesystem_device_error|node_filesystem_readonly|process_max_fds|process_open_fds|node_disk_read_bytes_total|node_disk_written_bytes_total|node_disk_io_time_seconds_total|node_disk_reads_completed_total|node_disk_writes_completed_total|fstype|mountpoint|cluster|job|instance|device|node_boot_time_seconds|node_load1|node_cpu_seconds_total|node_disk_io_time_seconds_total|node_memory_MemAvailable_bytes|node_memory_MemTotal_bytes|node_filesystem_avail_bytes|node_filesystem_size_bytes|ALERTS|node_uname_info|node_os_info|node_network_transmit_errs_total|node_network_receive_errs_total|node_network_transmit_drop_total|node_network_receive_drop_total|cpu_usage|system.cpu.idle|system.cpu.user|memory.usage|memory.available|memory.total|disk.io.time|disk.io.write_bytes_total|disk.io.read_bytes_total|network.bytes_received|network.bytes_sent|network.packets_received|network.packets_sent|process.cpu_seconds_total|process.memory_rss|system.load1|system.load5|system.load15"
+
+  }
+
+  forward_to = [prometheus.remote_write.metrics_service.receiver]
+}
+
+prometheus.remote_write "metrics_service" {
+  endpoint {
+    url = sys.env("GRAFANA_PROM_URL")
+
+    basic_auth { 
+      username = sys.env("GRAFANA_PROM_USERNAME")
+      password = sys.env("GRAFANA_PROM_PASSWORD")
+    }
+  }
+}
+
+// ##################################################
+// PROMETHEUS integrations_alloy_health
+// ##################################################
+prometheus.exporter.self "integrations_alloy_health" { }
+
+prometheus.scrape "integrations_alloy_health" {
+  targets    = discovery.relabel.integrations_alloy_health.output
+  forward_to = [prometheus.relabel.integrations_alloy_health.receiver]
+  job_name   = "integrations/alloy"
+}
+
+prometheus.relabel "integrations_alloy_health" {
+	forward_to = [prometheus.remote_write.metrics_service.receiver]
+
+	rule {
+		source_labels = ["__name__"]
+		regex         = "alloy_build_info|alloy_component_controller_running_components|alloy_component_dependencies_wait_seconds|alloy_component_dependencies_wait_seconds_bucket|alloy_component_evaluation_seconds|alloy_component_evaluation_seconds_bucket|alloy_component_evaluation_seconds_count|alloy_component_evaluation_seconds_sum|alloy_component_evaluation_slow_seconds|alloy_config_hash|alloy_resources_machine_rx_bytes_total|alloy_resources_machine_tx_bytes_total|alloy_resources_process_cpu_seconds_total|alloy_resources_process_resident_memory_bytes|cluster_node_gossip_health_score|cluster_node_gossip_proto_version|cluster_node_gossip_received_events_total|cluster_node_info|cluster_node_lamport_time|cluster_node_peers|cluster_node_update_observers|cluster_transport_rx_bytes_total|cluster_transport_rx_packet_queue_length|cluster_transport_rx_packets_failed_total|cluster_transport_rx_packets_total|cluster_transport_stream_rx_bytes_total|cluster_transport_stream_rx_packets_failed_total|cluster_transport_stream_rx_packets_total|cluster_transport_stream_tx_bytes_total|cluster_transport_stream_tx_packets_failed_total|cluster_transport_stream_tx_packets_total|cluster_transport_streams|cluster_transport_tx_bytes_total|cluster_transport_tx_packet_queue_length|cluster_transport_tx_packets_failed_total|cluster_transport_tx_packets_total|go_gc_duration_seconds_count|go_goroutines|go_memstats_heap_inuse_bytes|otelcol_exporter_send_failed_spans_total|otelcol_exporter_sent_spans_total|otelcol_processor_batch_batch_send_size_bucket|otelcol_processor_batch_metadata_cardinality|otelcol_processor_batch_timeout_trigger_send_total|otelcol_receiver_accepted_spans_total|otelcol_receiver_refused_spans_total|prometheus_remote_storage_bytes_total|prometheus_remote_storage_highest_timestamp_in_seconds|prometheus_remote_storage_metadata_bytes_total|prometheus_remote_storage_queue_highest_sent_timestamp_seconds|prometheus_remote_storage_samples_failed_total|prometheus_remote_storage_samples_retried_total|prometheus_remote_storage_samples_total|prometheus_remote_storage_sent_batch_duration_seconds_bucket|prometheus_remote_storage_sent_batch_duration_seconds_count|prometheus_remote_storage_sent_batch_duration_seconds_sum|prometheus_remote_storage_shards|prometheus_remote_storage_shards_max|prometheus_remote_storage_shards_min|prometheus_remote_write_wal_samples_appended_total|prometheus_remote_write_wal_storage_active_series|rpc_server_duration_milliseconds_bucket|scrape_duration_seconds|up"
+		action        = "keep"
+	}
+}
+
+// ##################################################
+// LOKI alloy health
+// ##################################################
+logging {
+  write_to = [loki.process.logs_integrations_integrations_alloy_health.receiver]
+}
+
+loki.process "logs_integrations_integrations_alloy_health" {
+  forward_to = [loki.relabel.logs_integrations_integrations_alloy_health.receiver]
+
+  stage.regex {
+    expression = "(level=(?P<log_level>[\\s]*debug|warn|info|error))"
+  }
+  
+  stage.labels {
+    values = {
+      level = "log_level",
+    }
+  }
+}
+
+loki.relabel "logs_integrations_integrations_alloy_health" {
+
+  forward_to = [loki.write.grafana_cloud_loki.receiver]
+
+  rule {
+    replacement = sys.env("HOSTNAME") 
+    target_label  = "instance"
+  }
+
+  rule {
+    target_label = "job"
+    replacement  = "integrations/alloy"
+  }
+}
+
+// ##################################################
+// LOKI local files
+// ##################################################
+
+local.file_match "local_files" {
+    path_targets = [
+      {"__path__" = "/var/log/ufw.log"},
+      {"__path__" = "/var/log/fail2ban.log"},
+      {"__path__" = "/var/log/auth.log"},
+    ]
+    sync_period = "60s"
+}
+
+loki.source.file "log_scrape" {
+  targets    = local.file_match.local_files.targets
+  forward_to = [loki.relabel.add_job_label.receiver]
+  tail_from_end = true
+}
+
+loki.relabel "add_job_label" {
+  forward_to = [loki.process.filter_logs.receiver]
+
+  rule {
+    replacement = sys.env("HOSTNAME")
+    target_label  = "instance"
+  }
+
+  rule {
+    target_label = "job"
+    replacement  = "local_files"
+  }
+}
+
+loki.process "filter_logs" {
+  stage.drop {
+    source = ""
+    expression  = ".*Connection closed by authenticating user root"
+    drop_counter_reason = "noisy"
+  }
+  forward_to = [loki.process.logs_integrations_fail2ban.receiver]
+}
+
+loki.process "logs_integrations_fail2ban" {
+  forward_to = [loki.relabel.add_hostname_label_cloud.receiver]
+
+  stage.regex {
+    expression = "(?P<timestamp>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2},\\d{3}) (?P<component>\\S+)\\s+\\[(?P<pid>\\d+)\\]: (?P<level>\\S+)\\s+\\[(?P<service>\\S+)\\] (?P<action>\\S+) (?P<ip>\\S+)"
+  }
+
+  stage.labels {
+    values = {
+      component = "",
+      level = "",
+      service = "",
+      action = "",
+    }
+  }
+}
+
+loki.relabel "add_hostname_label_cloud" {
+  forward_to = [loki.write.grafana_cloud_loki.receiver]
+
+  rule {
+    replacement = sys.env("HOSTNAME")
+    target_label  = "hostname"
+  }
+}
+
+//loki.relabel "add_hostname_label_local" {
+//  forward_to = local.target_array
+
+//  rule {
+//    replacement = sys.env("HOSTNAME")
+//    target_label  = "hostname"
+//  }
+//}
+
+//local.target_array {
+//  value = sys.env("GRAFANA_ALLOY_LOCAL_WRITE") == "true" 
+//    ? [loki.write.grafana_loki.receiver] 
+//    : []
+//}
+
+// ##################################################
+// LOKI integrations/alloy
+// ##################################################
+loki.relabel "logs_integrations" {
+  forward_to = [loki.write.grafana_cloud_loki.receiver]
+
+  rule {
+    replacement = sys.env("HOSTNAME")
+    target_label = "instance"
+  }
+
+  rule {
+    target_label = "job"
+    replacement = "integrations/alloy"
+  }
+}
+
+discovery.relabel "integrations_alloy_health" {
+  targets = prometheus.exporter.self.integrations_alloy_health.targets
+
+  rule {
+    replacement = sys.env("HOSTNAME")
+    target_label  = "instance"
+  }
+
+  rule {
+    target_label = "job"
+    replacement  = "integrations/alloy"
+  }
+}
+
+// ##################################################
+// LOKI write  
+// ##################################################
+
+loki.write "grafana_loki" {
+    endpoint {
+      url = "http://localhost:3100/loki/api/v1/push"
+
+      // basic_auth {
+      //  username = "admin"
+      //  password = "admin"
+      // }
+    }
+  }
+
+loki.write "grafana_cloud_loki" {
+  endpoint {
+    url = sys.env("GRAFANA_LOKI_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_LOKI_USERNAME")
+      password = sys.env("GRAFANA_LOKI_PASSWORD")
+    }
+  }
+}
+
+// ##################################################
+// TRACES
+// ##################################################
+otelcol.receiver.otlp "otlp_receiver" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces  = [otelcol.exporter.otlp.grafanacloud.input]
+    metrics = [otelcol.exporter.otlp.grafanacloud.input]
+    logs    = [otelcol.exporter.otlp.grafanacloud.input]
+  }
+}
+
+otelcol.exporter.otlp "grafanacloud" {
+  client {
+    endpoint = sys.env("GRAFANA_TRACES_URL") 
+    auth = otelcol.auth.basic.grafanacloud.handler
+  }
+}
+
+otelcol.auth.basic "grafanacloud" {
+  username = sys.env("GRAFANA_TRACES_USERNAME") 
+  password = sys.env("GRAFANA_TRACES_PASSWORD") 
+}
+
