@@ -354,6 +354,62 @@ Install and run Alloy on Linux.
 - Install Alloy. https://grafana.com/docs/alloy/latest/set-up/install/linux/
 - Run Alloy. https://grafana.com/docs/alloy/latest/set-up/run/linux/
 
+```java
+sudo apt-get update
+```
+
+Install Alloy
+
+```java
+sudo apt-get install alloy
+```
+
+### Start Alloy
+
+Configure Alloy to start at boot
+
+To automatically run Alloy when the system starts, run the following command in a terminal window:
+
+```java
+sudo systemctl enable alloy.service
+```
+
+To start Alloy, run the following command in a terminal window:
+
+```java
+sudo systemctl start alloy
+```
+
+Optional: To verify that the service is running, run the following command in a terminal window:
+
+```java
+sudo systemctl status alloy
+```
+
+Restart Alloy
+
+To restart Alloy, run the following command in a terminal window:
+
+```java
+sudo systemctl restart alloy
+```
+
+Stop Alloy
+
+To stop Alloy, run the following command in a terminal window:
+
+```java
+sudo systemctl stop alloy
+```
+
+View Alloy logs
+
+To view Alloy log files, run the following command in a terminal window:
+
+```java
+sudo journalctl -u alloy
+```
+
 ### macOS
 
 Install and run Alloy on macOS.
