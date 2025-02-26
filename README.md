@@ -147,6 +147,7 @@ By following these steps, your Grafana secrets should be loaded automatically on
 
 ```java
 cd /tmp
+rm my_config.alloy*
 wget https://raw.githubusercontent.com/coding-to-music/grafana-alloy-otel-tutorial-loki-prometheus/refs/heads/main/my_config.alloy
 
 # verify
@@ -159,6 +160,14 @@ sudo cp -p /etc/alloy/config.alloy /etc/alloy/config.alloy.$(date +%Y-%m-%d_%H-%
 sudo ls -l /etc/alloy
 
 sudo mv my_config.alloy /etc/alloy/config.alloy
+```
+
+Restart Alloy
+
+```java
+sudo systemctl restart alloy
+
+sudo systemctl status alloy
 ```
 
 This is what the config.alloy visualization looks like using the graph view:
