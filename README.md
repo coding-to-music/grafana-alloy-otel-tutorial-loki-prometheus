@@ -217,16 +217,6 @@ To install Node Exporter on Ubuntu cloud VMs and have it enabled and automatical
 
 ### Download and extract Node Exporter:
 
-```java
-#
-# these download instructions are obsolete - see below for getting the latest version
-#
-cd /tmp
-wget https://github.com/prometheus/node_exporter/releases/download/v1.1.1/node_exporter-1.1.1.linux-amd64.tar.gz
-tar xvfz node_exporter-*.*-amd64.tar.gz
-cd node_exporter-*.*-amd64
-```
-
 Get the latest version number
 
 ```java
@@ -348,6 +338,16 @@ Interactive
 This tutorial requires a Linux or macOS environment with Docker installed.
 
 ### Linux
+
+Set up gpg for signed downloads from Grafana
+
+```java
+mkdir -p /etc/apt/keyrings/
+
+wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor > /etc/apt/keyrings/grafana.gpg
+
+echo "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main" | tee /etc/apt/sources.list.d/grafana.list
+```
 
 Install and run Alloy on Linux.
 
