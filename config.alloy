@@ -1,3 +1,5 @@
+// config file to be stored at: /etc/alloy/config.alloy
+
 prometheus.exporter.unix "local_system" { }
 
 prometheus.scrape "scrape_metrics" {

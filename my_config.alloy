@@ -1,3 +1,6 @@
+// config file to be stored at: /etc/alloy/config.alloy
+// note the otlp_receiver default ports grpc=4317 and http=4318 are instead 4327 and 4328 
+
 // ##################################################
 // PROMETHEUS exporter.unix "local_system"
 // ##################################################
@@ -239,13 +242,14 @@ loki.write "grafana_cloud_loki" {
 
 // ##################################################
 // TRACES
+// note the otlp_receiver default ports grpc=4317 and http=4318 are instead 4327 and 4328 
 // ##################################################
 otelcol.receiver.otlp "otlp_receiver" {
   grpc {
-    endpoint = "0.0.0.0:4317"
+    endpoint = "0.0.0.0:4327"
   }
   http {
-    endpoint = "0.0.0.0:4318"
+    endpoint = "0.0.0.0:4328"
   }
 
   output {
